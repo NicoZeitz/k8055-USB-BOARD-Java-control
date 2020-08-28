@@ -1,38 +1,45 @@
 package Board;
 
-import tarik.board.control.*;
-public class Zaehler {
-	 
-    public static void main(String[] args) {
-        System.out.println("Programm gestartet, warten auf Tastendruck");
-        try {
-        	// Einziger Unterschied zum normalen Code
-        	TWUsbBoard TWUsb = USBBoard.getBoard();
-        	
-            TWUsb.OpenDevice(TWUsbBoard.ADDRESSE_0);
-            TWUsb.ClearAllDigital();
-            Thread.sleep(100);
-            TWUsb.ClearAllAnalog();
-            Thread.sleep(100);           
-            // *****************************************************************
-            // hier kommt dann später euer eigener Code hinein  
-            for (int i = 0; i < 256; i++) {
-                while ((TWUsb.ReadAllDigital() & 0b10000) == 0){ // Flanke                     
-                    Thread.sleep(1);                
-                }
-                System.out.println("ein Tastendruck");
-                TWUsb.WriteAllDigital(i);
-                Thread.sleep(100);
-            }
-            // *****************************************************************            
-            TWUsb.CloseDevice();                    
-        } catch (TWUsbException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }       
-    }
-}
+import java.util.concurrent.atomic.AtomicInteger;
 
+import tarik.board.control.TWUsb;
+import tarik.board.control.TWUsbException;
+
+public class Zaehler
+{
+	private static AtomicInteger count = new AtomicInteger(0);
+
+	public static void main(String[] args)
+	{
+		System.out.println("Programm gestartet, warten auf Tastendruck");
+		try
+		{
+			TWUsb.onBtnPressed(Zaehler::btnPressed);
+			TWUsb.onBtn5Pressed(Zaehler::btn5Pressed);
+
+			for (; true; count.incrementAndGet( ))
+			{
+				if (count.get( ) == 256)
+					count.set(0);
+
+				TWUsb.WriteAllDigital(count.get( ));
+				Thread.sleep(400);
+			}
+		}
+		catch (TWUsbException | InterruptedException e)
+		{
+			e.printStackTrace( );
+		}
+	}
+
+	public static void btnPressed(int i)
+	{
+		System.out.println("BTN PRESSED: " + i);
+	}
+
+	public static void btn5Pressed( )
+	{
+		System.out.println("BTN 5 PRESSED - RESET");
+		count.set(0);
+	}
+}
